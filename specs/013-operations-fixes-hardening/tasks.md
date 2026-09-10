@@ -8,8 +8,8 @@
 
 **Purpose**: Verify working tree state and baseline build before making modifications
 
-- [ ] T001 Verify backend builds cleanly via `dotnet build` in `src/RetailOS.Api`
-- [ ] T002 [P] Verify frontend TypeScript types and compilation in `g:\system-analysiss-saas\system-FE`
+- [x] T001 Verify backend builds cleanly via `dotnet build` in `src/RetailOS.Api`
+- [x] T002 [P] Verify frontend TypeScript types and compilation in `g:\system-analysiss-saas\system-FE`
 
 ---
 
@@ -17,8 +17,8 @@
 
 **Purpose**: Core DTO updates and shared interfaces required across user stories
 
-- [ ] T003 Update `CashRegisterCloseResponse` in `src/RetailOS.Application/CashRegister/DTOs/CashRegisterDTOs.cs` to include `SweepAmount`
-- [ ] T004 [P] Update `AccountStatementItemResponse` in `src/RetailOS.Application/Suppliers/DTOs/SupplierDTOs.cs` with invoice summary fields
+- [x] T003 Update `CashRegisterCloseResponse` in `src/RetailOS.Application/CashRegister/DTOs/CashRegisterDTOs.cs` to include `SweepAmount`
+- [x] T004 [P] Update `AccountStatementItemResponse` in `src/RetailOS.Application/Suppliers/DTOs/SupplierDTOs.cs` with invoice summary fields
 
 **Checkpoint**: Core DTOs and signatures ready for service implementations.
 
@@ -33,10 +33,10 @@
 2. Verify setting a price lower than `item.purchaseCost` is blocked in frontend and backend throws `PRICE_BELOW_COST`.
 
 ### Implementation for User Story 1:
-- [ ] T005 [US1] Fix WhatsApp URL generation inside `B2BOrderDetailsModal.tsx` by passing `order.status`, `order.totalAmount`, and `order.paymentPreference` to `buildOrderWhatsAppUrl` in `g:\system-analysiss-saas\system-FE\src\features\b2b\components\B2BOrderDetailsModal.tsx`
-- [ ] T006 [P] [US1] Change default fallback status in `whatsappUtils.ts` from 'مرفوض' to 'قيد المراجعة' in `g:\system-analysiss-saas\system-FE\src\features\b2b\utils\whatsappUtils.ts`
-- [ ] T007 [US1] Enforce `PRICE_BELOW_COST` domain guard in `B2BOrderService.ApproveOrderAsync` rejecting any unit price `< item.PurchaseCost` in `src/RetailOS.Infrastructure/B2B/B2BOrderService.cs`
-- [ ] T008 [US1] Add client-side validation, minimum price constraints (`min={item.purchaseCost}`), and warning badges in `g:\system-analysiss-saas\system-FE\src\features\b2b\components\B2BOrderDetailsModal.tsx`
+- [x] T005 [US1] Fix WhatsApp URL generation inside `B2BOrderDetailsModal.tsx` by passing `order.status`, `order.totalAmount`, and `order.paymentPreference` to `buildOrderWhatsAppUrl` in `g:\system-analysiss-saas\system-FE\src\features\b2b\components\B2BOrderDetailsModal.tsx`
+- [x] T006 [P] [US1] Change default fallback status in `whatsappUtils.ts` from 'مرفوض' to 'قيد المراجعة' in `g:\system-analysiss-saas\system-FE\src\features\b2b\utils\whatsappUtils.ts`
+- [x] T007 [US1] Enforce `PRICE_BELOW_COST` domain guard in `B2BOrderService.ApproveOrderAsync` rejecting any unit price `< item.PurchaseCost` in `src/RetailOS.Infrastructure/B2B/B2BOrderService.cs`
+- [x] T008 [US1] Add client-side validation, minimum price constraints (`min={item.purchaseCost}`), and warning badges in `g:\system-analysiss-saas\system-FE\src\features\b2b\components\B2BOrderDetailsModal.tsx`
 
 **Checkpoint**: B2B order modal displays correct status via WhatsApp and strictly rejects below-cost pricing.
 
@@ -51,9 +51,9 @@
 2. Confirm discrepancy adjustment is logged and drawer sweep transaction zeroes the drawer balance.
 
 ### Implementation for User Story 2:
-- [ ] T009 [US2] Update `CloseRegisterAsync` in `CashRegisterService.cs` to add a closing `CashDrop` sweep for `-request.CountedAmount` in `src/RetailOS.Infrastructure/Operations/CashRegisterService.cs`
-- [ ] T010 [US2] Update `CloseRegisterModal.tsx` to display cash sweep confirmation and notify user of drawer zeroing in `g:\system-analysiss-saas\system-FE\src\features\expenses\components\CloseRegisterModal.tsx`
-- [ ] T011 [US2] Ensure dashboard cash register summary query accounts for closing sweep in `src/RetailOS.Infrastructure/Operations/DashboardService.cs`
+- [x] T009 [US2] Update `CloseRegisterAsync` in `CashRegisterService.cs` to add a closing `CashDrop` sweep for `-request.CountedAmount` in `src/RetailOS.Infrastructure/Operations/CashRegisterService.cs`
+- [x] T010 [US2] Update `CloseRegisterModal.tsx` to display cash sweep confirmation and notify user of drawer zeroing in `g:\system-analysiss-saas\system-FE\src\features\expenses\components\CloseRegisterModal.tsx`
+- [x] T011 [US2] Ensure dashboard cash register summary query accounts for closing sweep in `src/RetailOS.Infrastructure/Operations/DashboardService.cs`
 
 **Checkpoint**: Cash drawer is strictly zeroed upon closing, ready for a fresh opening float.
 
@@ -68,9 +68,9 @@
 2. Complete a POS sale; verify 14% VAT is calculated and stored in `Sale.TaxAmount`.
 
 ### Implementation for User Story 3:
-- [ ] T012 [US3] Implement immediate auto-save on toggle switches (`TaxEnabled`, `AllowNegativeStock`) with toast feedback in `g:\system-analysiss-saas\system-FE\src\features\settings\components\StoreProfileTab.tsx`
-- [ ] T013 [US3] Calculate and record `TaxAmount = SubTotal * 0.14` and update `TotalAmount` in `SaleService.CreateSaleAsync` when `store.TaxEnabled` is true in `src/RetailOS.Infrastructure/Operations/SaleService.cs`
-- [ ] T014 [US3] Display 14% VAT breakdown in POS checkout summary and invoice printing when store tax is enabled in `g:\system-analysiss-saas\system-FE\src\pages\POS.tsx`
+- [x] T012 [US3] Implement immediate auto-save on toggle switches (`TaxEnabled`, `AllowNegativeStock`) with toast feedback in `g:\system-analysiss-saas\system-FE\src\features\settings\components\StoreProfileTab.tsx`
+- [x] T013 [US3] Calculate and record `TaxAmount = SubTotal * 0.14` and update `TotalAmount` in `SaleService.CreateSaleAsync` when `store.TaxEnabled` is true in `src/RetailOS.Infrastructure/Operations/SaleService.cs`
+- [x] T014 [US3] Display 14% VAT breakdown in POS checkout summary and invoice printing when store tax is enabled in `g:\system-analysiss-saas\system-FE\src\pages\POS.tsx`
 
 **Checkpoint**: Store settings persist reliably, and VAT 14% is accurately calculated when toggled ON.
 
@@ -85,8 +85,8 @@
 2. Click "عرض تفاصيل الفاتورة" on a purchase row; verify line items and costs are rendered.
 
 ### Implementation for User Story 4:
-- [ ] T015 [US4] Add purchase invoice details drill-down button and expandable drawer/accordion in `g:\system-analysiss-saas\system-FE\src\features\suppliers\components\SupplierStatementModal.tsx`
-- [ ] T016 [US4] Leverage `/api/purchases/{id}` to fetch and render invoice line items (product, qty, unit cost, subtotal) on demand in `g:\system-analysiss-saas\system-FE\src\features\suppliers\components\SupplierStatementModal.tsx`
+- [x] T015 [US4] Add purchase invoice details drill-down button and expandable drawer/accordion in `g:\system-analysiss-saas\system-FE\src\features\suppliers\components\SupplierStatementModal.tsx`
+- [x] T016 [US4] Leverage `/api/purchases/{id}` to fetch and render invoice line items (product, qty, unit cost, subtotal) on demand in `g:\system-analysiss-saas\system-FE\src\features\suppliers\components\SupplierStatementModal.tsx`
 
 **Checkpoint**: Supplier statement provides full invoice item transparency for accounting audit.
 
@@ -101,8 +101,8 @@
 2. Deactivate a merchant; verify merchant's login is immediately blocked.
 
 ### Implementation for User Story 5:
-- [ ] T017 [US5] Filter out `Role == Roles.Merchant` in `UserService.GetUsersAsync` in `src/RetailOS.Infrastructure/Users/UserService.cs`
-- [ ] T018 [US5] Update `MerchantService.ToggleActiveAsync` to synchronously update linked `User.IsActive` in `src/RetailOS.Infrastructure/B2B/MerchantService.cs`
+- [x] T017 [US5] Filter out `Role == Roles.Merchant` in `UserService.GetUsersAsync` in `src/RetailOS.Infrastructure/Users/UserService.cs`
+- [x] T018 [US5] Update `MerchantService.ToggleActiveAsync` to synchronously update linked `User.IsActive` in `src/RetailOS.Infrastructure/B2B/MerchantService.cs`
 
 **Checkpoint**: Staff management is clean and merchant deactivation immediately secures the wholesale portal.
 
@@ -112,10 +112,10 @@
 
 **Purpose**: Full compilation, API restart, and end-to-end verification across all 5 workflows.
 
-- [ ] T019 Run `dotnet build` to ensure zero compilation warnings or errors across the backend solution
-- [ ] T020 Run `dotnet run --project src/RetailOS.Api` in background to start API on port 5030
-- [ ] T021 Execute full verification walkthrough following `quickstart.md` across all 5 modules
-- [ ] T022 Commit and push changes to GitHub repository `https://github.com/khedrfarrag/ERPsystem-BE.git`
+- [x] T019 Run `dotnet build` to ensure zero compilation warnings or errors across the backend solution
+- [x] T020 Run `dotnet run --project src/RetailOS.Api` in background to start API on port 5030
+- [x] T021 Execute full verification walkthrough following `quickstart.md` across all 5 modules
+- [x] T022 Commit and push changes to GitHub repository `https://github.com/khedrfarrag/ERPsystem-BE.git`
 
 ---
 
