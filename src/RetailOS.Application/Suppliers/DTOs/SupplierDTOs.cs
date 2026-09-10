@@ -49,7 +49,8 @@ public record AccountStatementItemResponse(
     decimal Amount,
     decimal RunningBalance,
     Guid? ReferenceId,
-    string? Notes);
+    string? Notes,
+    string? ReferenceNumber = null);
 
 public record AccountStatementResponse(
     Guid PartyId,

@@ -339,6 +339,14 @@ public class MerchantService : IMerchantService
             customer.IsActive = merchant.IsActive;
         }
 
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == merchant.UserId, cancellationToken);
+
+        if (user != null)
+        {
+            user.IsActive = merchant.IsActive;
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
     }
 

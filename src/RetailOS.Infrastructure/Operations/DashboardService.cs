@@ -101,7 +101,12 @@ public class DashboardService : IDashboardService
             .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
-        bool isCashRegisterOpen = lastFloat != null && Math.Abs((DateTime.UtcNow - lastFloat.CreatedAt).TotalHours) <= 24;
+        var lastCloseSweep = await _context.CashRegisterTransactions.AsNoTracking()
+            .Where(t => t.Type == CashTransactionType.CashWithdrawal && t.Notes != null && t.Notes.Contains("إغلاق الوردية"))
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        bool isCashRegisterOpen = lastFloat != null && (lastCloseSweep == null || lastFloat.CreatedAt > lastCloseSweep.CreatedAt);
         string? activeCashierName = null;
         if (isCashRegisterOpen && lastFloat != null)
         {

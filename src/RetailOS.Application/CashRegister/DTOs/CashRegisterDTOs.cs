@@ -20,7 +20,8 @@ public record CashRegisterCloseResponse(
     decimal CountedAmount,
     decimal Discrepancy,
     string? Notes,
-    DateTimeOffset ClosedAt);
+    DateTimeOffset ClosedAt,
+    decimal SweepAmount = 0m);
 
 public record CashRegisterTransactionResponse(
     Guid Id,

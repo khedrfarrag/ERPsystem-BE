@@ -8,6 +8,7 @@ using RetailOS.Application.Users.DTOs;
 using RetailOS.Application.Users.Interfaces;
 using RetailOS.Domain.Entities;
 using RetailOS.Infrastructure.Persistence;
+using RetailOS.Shared.Constants;
 
 namespace RetailOS.Infrastructure.Users;
 
@@ -49,7 +50,8 @@ public class UserService : IUserService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = _context.Users.AsNoTracking();
+        var query = _context.Users.AsNoTracking()
+            .Where(u => u.Role != Roles.Merchant);
 
         if (isActive.HasValue)
             query = query.Where(u => u.IsActive == isActive.Value);

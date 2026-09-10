@@ -189,23 +189,32 @@ public class SaleService : ISaleService
         }
 
         sale.SubTotal = subTotal;
-        sale.TotalAmount = subTotal;
+        if (store?.TaxEnabled == true)
+        {
+            sale.TaxAmount = Math.Round(subTotal * 0.14m, 2, MidpointRounding.AwayFromZero);
+            sale.TotalAmount = subTotal + sale.TaxAmount;
+        }
+        else
+        {
+            sale.TaxAmount = 0m;
+            sale.TotalAmount = subTotal;
+        }
         sale.TotalCost = totalCost;
 
         if (pMethod == SalePaymentMethod.Cash)
         {
-            sale.CashAmount = subTotal;
+            sale.CashAmount = sale.TotalAmount;
             sale.CreditAmount = 0m;
         }
         else if (pMethod == SalePaymentMethod.Credit)
         {
             sale.CashAmount = 0m;
-            sale.CreditAmount = subTotal;
+            sale.CreditAmount = sale.TotalAmount;
         }
         else // Mixed
         {
             sale.CashAmount = request.CashAmount;
-            sale.CreditAmount = Math.Max(0m, subTotal - request.CashAmount);
+            sale.CreditAmount = Math.Max(0m, sale.TotalAmount - request.CashAmount);
         }
 
         _context.Sales.Add(sale);

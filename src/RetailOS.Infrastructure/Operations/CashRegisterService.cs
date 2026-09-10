@@ -126,19 +126,35 @@ public class CashRegisterService : ICashRegisterService
                 StoreId = storeId,
                 Type = CashTransactionType.CashAdjustment,
                 Amount = discrepancy,
-                Notes = $"EOD Count Discrepancy: {discrepancy} (Expected: {expectedBalance}, Counted: {request.CountedAmount})",
+                Notes = $"EOD Count Discrepancy: {discrepancy:N2} (Expected: {expectedBalance:N2}, Counted: {request.CountedAmount:N2})",
                 CreatedBy = userId
             };
             _context.CashRegisterTransactions.Add(adj);
-            await _context.SaveChangesAsync(cancellationToken);
         }
+
+        // Drawer zeroing sweep (توريد وإخلاء كامل المبلغ الفعلي المعدود للخزينة)
+        if (request.CountedAmount > 0m)
+        {
+            var sweep = new CashRegisterTransaction
+            {
+                StoreId = storeId,
+                Type = CashTransactionType.CashWithdrawal,
+                Amount = -request.CountedAmount,
+                Notes = $"إغلاق الوردية وتوريد النقدية للخزينة: {request.CountedAmount:N2} ج.م. {request.Notes ?? ""}".Trim(),
+                CreatedBy = userId
+            };
+            _context.CashRegisterTransactions.Add(sweep);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
 
         return new CashRegisterCloseResponse(
             expectedBalance,
             request.CountedAmount,
             discrepancy,
             request.Notes,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            request.CountedAmount);
     }
 
     public async Task<IReadOnlyList<CashRegisterTransactionResponse>> GetTransactionsAsync(DateTimeOffset? from = null, DateTimeOffset? to = null, CancellationToken cancellationToken = default)

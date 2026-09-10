@@ -324,8 +324,25 @@ public class B2BOrderService : IB2BOrderService
                 if (approval.ApprovedQuantity < item.RequestedQuantity && string.IsNullOrWhiteSpace(approval.AdjustmentReason))
                     throw new DomainException("ADJUSTMENT_REASON_REQUIRED", $"يرجى كتابة سبب تعديل كمية الصنف '{item.ProductName}'.", 400);
 
-                if (approval.UnitWholesalePrice.HasValue && approval.UnitWholesalePrice.Value >= 0)
+                if (approval.UnitWholesalePrice.HasValue)
                 {
+                    var minCost = item.Product?.PurchaseCost ?? 0m;
+                    if (minCost > 0m && approval.UnitWholesalePrice.Value < minCost)
+                    {
+                        throw new DomainException(
+                            "PRICE_BELOW_COST",
+                            $"سعر البيع بالجملة ({approval.UnitWholesalePrice.Value:N2} ج.م) للصنف '{item.ProductName}' لا يمكن أن يقل عن سعر التكلفة ({minCost:N2} ج.م). لا يُسمح بالبيع بأقل من التكلفة.",
+                            400);
+                    }
+
+                    if (approval.UnitWholesalePrice.Value <= 0)
+                    {
+                        throw new DomainException(
+                            "INVALID_PRICE",
+                            $"سعر البيع بالجملة للصنف '{item.ProductName}' يجب أن يكون أكبر من صفر.",
+                            400);
+                    }
+
                     item.UnitWholesalePrice = approval.UnitWholesalePrice.Value;
                 }
 
@@ -504,6 +521,13 @@ public class B2BOrderService : IB2BOrderService
             var prod = products[item.ProductId];
             var qty = item.ApprovedQuantity!.Value;
             var unitCost = prod.PurchaseCost ?? 0m;
+            if (unitCost > 0m && item.UnitWholesalePrice < unitCost)
+            {
+                throw new DomainException(
+                    "PRICE_BELOW_COST",
+                    $"سعر بيع الصنف '{item.ProductName}' ({item.UnitWholesalePrice:N2} ج.م) أقل من سعر التكلفة ({unitCost:N2} ج.م). لا يُسمح بإصدار الفاتورة بخسارة.",
+                    400);
+            }
             var lineSubtotal = qty * item.UnitWholesalePrice;
             var lineCost = qty * unitCost;
 
