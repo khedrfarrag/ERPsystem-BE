@@ -60,7 +60,9 @@ public record ProductResponse(
     DateTime UpdatedAt,
     decimal? WholesalePrice = null,
     bool IsWholesaleAvailable = false,
-    decimal? EffectiveWholesalePrice = null
+    decimal? EffectiveWholesalePrice = null,
+    Guid? CategoryId = null,
+    Guid? UnitId = null
 );
 
 public record ProductListResponse(

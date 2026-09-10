@@ -96,7 +96,9 @@ public class ProductService : IProductService
                 p.UpdatedAt,
                 p.WholesalePrice,
                 p.IsWholesaleAvailable,
-                p.WholesalePrice ?? p.SellingPrice
+                p.WholesalePrice ?? p.SellingPrice,
+                p.CategoryId,
+                p.UnitId
             ))
             .ToListAsync(cancellationToken);
 
@@ -351,6 +353,8 @@ public class ProductService : IProductService
         p.UpdatedAt,
         p.WholesalePrice,
         p.IsWholesaleAvailable,
-        p.WholesalePrice ?? p.SellingPrice
+        p.WholesalePrice ?? p.SellingPrice,
+        p.CategoryId,
+        p.UnitId
     );
 }

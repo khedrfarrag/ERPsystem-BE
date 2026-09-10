@@ -9,7 +9,7 @@ namespace RetailOS.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = $"{Roles.Owner},{Roles.Manager}")]
+[Authorize(Roles = $"{Roles.Owner},{Roles.Manager},{Roles.Cashier}")]
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;

@@ -13,7 +13,8 @@ public record CashRegisterSummaryResponse(
     DateTimeOffset? LastFloatDate,
     decimal? LastFloatAmount,
     decimal TodayInflows,
-    decimal TodayOutflows);
+    decimal TodayOutflows,
+    bool IsShiftOpen = false);
 
 public record CashRegisterCloseResponse(
     decimal ExpectedBalance,

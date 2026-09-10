@@ -61,12 +61,21 @@ public class CashRegisterService : ICashRegisterService
             .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
+        var lastCloseSweep = await _context.CashRegisterTransactions
+            .AsNoTracking()
+            .Where(t => t.Type == CashTransactionType.CashWithdrawal && t.Notes != null && t.Notes.Contains("إغلاق الوردية"))
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        bool isShiftOpen = lastFloat != null && (lastCloseSweep == null || lastFloat.CreatedAt > lastCloseSweep.CreatedAt);
+
         return new CashRegisterSummaryResponse(
             currentBalance,
             lastFloat?.CreatedAt,
             lastFloat?.Amount,
             todayInflows,
-            todayOutflows);
+            todayOutflows,
+            isShiftOpen);
     }
 
     public async Task<CashRegisterTransactionResponse> OpenFloatAsync(OpenFloatRequest request, CancellationToken cancellationToken = default)
