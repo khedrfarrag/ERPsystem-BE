@@ -61,11 +61,39 @@ public class ProductImportService : IProductImportService
 
         var (validItems, errors) = await ValidateRowsAsync(rawRows, cancellationToken);
 
+        var errorDict = errors
+            .GroupBy(e => e.Row)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.Message).ToList());
+
+        var previewRows = rawRows.Select(r =>
+        {
+            var hasErrors = errorDict.TryGetValue(r.RowNumber, out var rowErrors);
+            decimal.TryParse(r.SellingPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var price);
+            decimal? cost = null;
+            if (!string.IsNullOrWhiteSpace(r.PurchaseCost) && decimal.TryParse(r.PurchaseCost, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsedCost))
+                cost = parsedCost;
+
+            return new ImportRowPreviewDto(
+                r.RowNumber,
+                r.Name,
+                r.Barcode,
+                r.CategoryName,
+                r.UnitSymbol,
+                price,
+                cost,
+                !hasErrors || rowErrors!.Count == 0,
+                rowErrors ?? (IReadOnlyList<string>)Array.Empty<string>()
+            );
+        }).ToList();
+
         return new ImportPreviewResponse(
             TotalRows: rawRows.Count,
             ValidRows: validItems.Count,
             ErrorRows: errors.Count,
-            Errors: errors
+            Errors: errors,
+            Rows: previewRows,
+            ValidRowsCount: validItems.Count,
+            InvalidRowsCount: errors.Count
         );
     }
 
@@ -147,7 +175,9 @@ public class ProductImportService : IProductImportService
             TotalProcessed: rawRows.Count,
             Created: batchToCreate.Count,
             SkippedDuplicate: skippedDuplicates,
-            SkippedInvalid: skippedInvalid
+            SkippedInvalid: skippedInvalid,
+            ImportedCount: batchToCreate.Count,
+            SkippedCount: skippedDuplicates + skippedInvalid
         );
     }
 
