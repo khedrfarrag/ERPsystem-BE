@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HostingContract",
+  "description": "Hosting rewrite, redirect, and caching rules for production static delivery",
+  "targets": {
+    "netlify": {
+      "file": "public/_redirects",
+      "rule": "/* /index.html 200",
+      "headers": {
+        "/assets/*": {
+          "Cache-Control": "public, max-age=31536000, immutable"
+        },
+        "/*": {
+          "Cache-Control": "public, max-age=0, must-revalidate"
+        }
+      }
+    },
+    "vercel": {
+      "file": "vercel.json",
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    "iis": {
+      "file": "web.config",
+      "description": "URL Rewrite rule for IIS when hosting SPA in wwwroot",
+      "rule": "<rule name=\"React Routes\" stopProcessing=\"true\"><match url=\".*\" /><conditions logicalGrouping=\"MatchAll\"><add input=\"{REQUEST_FILENAME}\" matchType=\"IsFile\" negate=\"true\" /><add input=\"{REQUEST_FILENAME}\" matchType=\"IsDirectory\" negate=\"true\" /><add input=\"{REQUEST_URI}\" pattern=\"^/(api)\" negate=\"true\" /></conditions><action type=\"Rewrite\" url=\"/\" /></rule>"
+    }
+  }
+}

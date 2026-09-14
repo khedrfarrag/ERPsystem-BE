@@ -2,6 +2,8 @@ using RetailOS.Api.Extensions;
 using RetailOS.Api.Middleware;
 using RetailOS.Application;
 using RetailOS.Infrastructure;
+using RetailOS.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,11 +33,16 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 // Serilog Request Logging
 app.UseSerilogRequestLogging();
 
+// Swagger for API inspection & verification
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "RetailOS API v1");
+    c.RoutePrefix = "swagger";
+});
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-
     // Auto-seed demo store on startup if not already created
     try
     {
@@ -50,16 +57,22 @@ if (app.Environment.IsDevelopment())
 }
 else if (app.Environment.IsProduction())
 {
-    // Idempotent production master data seeding (Units & Initial Owner only, no fake data)
+    // 1. Auto-apply EF Core Migrations to Remote Neon Database on startup
     try
     {
         using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Log.Information("Applying EF Core migrations to remote database...");
+        await db.Database.MigrateAsync();
+        Log.Information("Database schema is up to date.");
+
+        // 2. Idempotent production master data seeding (Units & Initial Owner only, no fake data)
         var prodSeeder = scope.ServiceProvider.GetRequiredService<RetailOS.Application.Common.Interfaces.IProductionDataSeeder>();
         await prodSeeder.SeedProductionMasterDataAsync();
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "Could not seed production master data on startup");
+        Log.Error(ex, "Could not apply migrations or seed production master data on startup");
     }
 }
 
