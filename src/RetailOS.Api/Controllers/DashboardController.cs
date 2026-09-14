@@ -8,6 +8,7 @@ using RetailOS.Shared.Constants;
 namespace RetailOS.Api.Controllers;
 
 [ApiController]
+[Route("api/v1/[controller]")]
 [Route("api/[controller]")]
 [Authorize(Roles = $"{Roles.Owner},{Roles.Manager},{Roles.Cashier}")]
 public class DashboardController : ControllerBase

@@ -1,0 +1,94 @@
+# Contract: Docker Compose Production Infrastructure Schema
+# Target: docker-compose.prod.yml
+
+schemaVersion: "3.9"
+stackName: "retailos-enterprise"
+
+loggingStandard:
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+servicesContract:
+  database:
+    imagePattern: "postgres:16-alpine"
+    requiredEnv:
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    networkRequirements:
+      internalOnly: true
+      prohibitedHostPorts:
+        - 5432
+    persistence:
+      volume: "pgdata"
+      mountPoint: "/var/lib/postgresql/data"
+    logOutput: "stderr stream (logging_collector=off)"
+    logging:
+      driver: "json-file"
+      maxSize: "20m"
+      maxFile: "3"
+
+  backend:
+    buildContext: "system-BE"
+    baseImage: "mcr.microsoft.com/dotnet/aspnet:9.0-alpine"
+    security:
+      runAsNonRoot: true
+      uid: 1654
+    requiredEnv:
+      - ConnectionStrings__Default
+      - Jwt__Secret
+      - ASPNETCORE_ENVIRONMENT
+    exposedPortInternal: 5000
+    networkRequirements:
+      connectsTo:
+        - internal_backend_net
+        - internal_frontend_net
+    healthProbe:
+      path: "/health/live"
+      type: "HTTP"
+    logOutput: "stdout (Console)"
+    logging:
+      driver: "json-file"
+      maxSize: "20m"
+      maxFile: "3"
+
+  frontend:
+    buildContext: "system-FE"
+    baseImage: "nginx:alpine-slim"
+    requiredBuildArgs:
+      - VITE_API_URL
+    exposedPortInternal: 80
+    networkRequirements:
+      connectsTo:
+        - internal_frontend_net
+    features:
+      - "SPA Routing (try_files index.html)"
+      - "Gzip Compression"
+      - "Security Headers (CSP, HSTS, X-Frame-Options)"
+    logOutput: "stdout/stderr"
+    logging:
+      driver: "json-file"
+      maxSize: "20m"
+      maxFile: "3"
+
+  edge_proxy:
+    imagePattern: "caddy:2-alpine"
+    publicPorts:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    tlsMode: "Automated ACME (Let's Encrypt / ZeroSSL)"
+    routingRules:
+      - prefix: "/api/*"
+        target: "http://backend:5000"
+      - prefix: "/health/*"
+        target: "http://backend:5000"
+      - prefix: "/*"
+        target: "http://frontend:80"
+    logOutput: "stdout (console)"
+    logging:
+      driver: "json-file"
+      maxSize: "20m"
+      maxFile: "3"

@@ -57,6 +57,12 @@ public static class DependencyInjection
         services.AddScoped<RetailOS.Application.B2B.IB2BOrderService, RetailOS.Infrastructure.B2B.B2BOrderService>();
         services.AddScoped<RetailOS.Application.B2B.INotificationService, RetailOS.Infrastructure.B2B.NotificationService>();
         services.AddScoped<RetailOS.Application.Common.Interfaces.IDemoDataSeeder, RetailOS.Infrastructure.Services.DemoDataSeeder>();
+        services.AddScoped<RetailOS.Application.Common.Interfaces.IProductionDataSeeder, RetailOS.Infrastructure.Services.ProductionDataSeeder>();
+        services.AddScoped<IInvoiceStorageService, RetailOS.Infrastructure.Storage.LocalFileInvoiceStorageService>();
+        services.AddScoped<RetailOS.Infrastructure.Ai.IAiInvoiceMatchingService, RetailOS.Infrastructure.Ai.AiInvoiceMatchingService>();
+        services.AddScoped<RetailOS.Infrastructure.Ai.IInvoiceVerificationService, RetailOS.Infrastructure.Ai.InvoiceVerificationService>();
+        services.AddScoped<RetailOS.Application.Ai.Interfaces.IAiInvoiceScannerService, RetailOS.Infrastructure.Ai.AiInvoiceScannerService>();
+        services.AddHttpClient<RetailOS.Application.Ai.Interfaces.IGeminiClient, RetailOS.Infrastructure.Ai.GeminiClient>();
 
         services.AddIdentityCore<User>(options =>
         {

@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RetailOS API Versioning Route Contract",
+  "version": "1.0.0",
+  "basePaths": [
+    "/api/v1",
+    "/api"
+  ],
+  "controllers": [
+    {
+      "name": "Auth",
+      "canonicalRoute": "/api/v1/auth",
+      "fallbackRoute": "/api/auth",
+      "actions": [
+        {
+          "method": "POST",
+          "path": "/login",
+          "authRequired": false,
+          "rateLimit": "AuthRateLimit"
+        },
+        {
+          "method": "POST",
+          "path": "/refresh",
+          "authRequired": false,
+          "rateLimit": "AuthRateLimit"
+        },
+        {
+          "method": "POST",
+          "path": "/change-password",
+          "authRequired": true
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "canonicalRoute": "/api/v1/dashboard",
+      "fallbackRoute": "/api/dashboard",
+      "actions": [
+        {
+          "method": "GET",
+          "path": "/summary",
+          "authRequired": true
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "canonicalRoute": "/api/v1/products",
+      "fallbackRoute": "/api/products",
+      "actions": [
+        {
+          "method": "GET",
+          "path": "",
+          "authRequired": true
+        },
+        {
+          "method": "POST",
+          "path": "",
+          "authRequired": true
+        },
+        {
+          "method": "GET",
+          "path": "/{id}",
+          "authRequired": true
+        }
+      ]
+    },
+    {
+      "name": "Sales",
+      "canonicalRoute": "/api/v1/sales",
+      "fallbackRoute": "/api/sales",
+      "actions": [
+        {
+          "method": "GET",
+          "path": "",
+          "authRequired": true
+        },
+        {
+          "method": "POST",
+          "path": "",
+          "authRequired": true
+        }
+      ]
+    },
+    {
+      "name": "AiInvoice",
+      "canonicalRoute": "/api/v1/ai/invoices",
+      "fallbackRoute": "/api/ai/invoices",
+      "actions": [
+        {
+          "method": "POST",
+          "path": "/scan",
+          "authRequired": true
+        },
+        {
+          "method": "POST",
+          "path": "/confirm",
+          "authRequired": true
+        }
+      ]
+    },
+    {
+      "name": "CashRegister",
+      "canonicalRoute": "/api/v1/cash-register",
+      "fallbackRoute": "/api/cash-register",
+      "actions": [
+        {
+          "method": "GET",
+          "path": "/status",
+          "authRequired": true
+        },
+        {
+          "method": "POST",
+          "path": "/open",
+          "authRequired": true
+        },
+        {
+          "method": "POST",
+          "path": "/close",
+          "authRequired": true
+        }
+      ]
+    },
+    {
+      "name": "B2BOrders",
+      "canonicalRoute": "/api/v1/b2b-orders",
+      "fallbackRoute": "/api/b2b-orders",
+      "actions": [
+        {
+          "method": "GET",
+          "path": "",
+          "authRequired": true
+        },
+        {
+          "method": "POST",
+          "path": "",
+          "authRequired": true
+        }
+      ]
+    }
+  ],
+  "healthProbes": [
+    {
+      "method": "GET",
+      "path": "/health/live",
+      "purpose": "Liveness check"
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "purpose": "Readiness & DB connectivity check"
+    }
+  ]
+}

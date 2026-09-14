@@ -61,6 +61,7 @@ public class StoreService : IStoreService
         store.InvoicePrefix = request.InvoicePrefix?.Trim() ?? "INV";
         store.Currency = request.Currency.Trim().ToUpperInvariant();
         store.Timezone = request.Timezone.Trim();
+        store.EnableInvoiceArchiving = request.EnableInvoiceArchiving;
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -79,6 +80,7 @@ public class StoreService : IStoreService
         store.AllowNegativeStock,
         store.InvoicePrefix,
         store.IsActive,
-        store.CreatedAt
+        store.CreatedAt,
+        store.EnableInvoiceArchiving
     );
 }

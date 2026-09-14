@@ -8,6 +8,7 @@ using RetailOS.Shared.Constants;
 namespace RetailOS.Api.Controllers;
 
 [ApiController]
+[Route("api/v1/[controller]")]
 [Route("api/[controller]")]
 [Authorize]
 public class ProductsController : ControllerBase
@@ -97,6 +98,14 @@ public class ProductsController : ControllerBase
     {
         await _productService.DeleteProductAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    [HttpGet("import/template")]
+    [Authorize]
+    public IActionResult DownloadTemplate()
+    {
+        var bytes = _importService.GenerateTemplateXlsx();
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "retailos_products_template.xlsx");
     }
 
     [HttpPost("import/preview")]

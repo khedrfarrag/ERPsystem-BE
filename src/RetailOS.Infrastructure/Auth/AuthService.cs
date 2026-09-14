@@ -163,11 +163,14 @@ public class AuthService : IAuthService
 
         var expiryMinutes = int.TryParse(_configuration["Jwt:AccessTokenExpiryMinutes"], out var expMin) ? expMin : 15;
 
+        var claims = await _userManager.GetClaimsAsync(user);
+        var mustChangePassword = claims.Any(c => c.Type == "MustChangePassword" && c.Value == "true");
+
         return new AuthResponse(
             accessToken,
             rawRefreshToken,
             expiryMinutes * 60,
-            new UserDto(user.Id, user.Email!, user.FirstName, user.LastName, user.Role, user.StoreId, storeName)
+            new UserDto(user.Id, user.Email!, user.FirstName, user.LastName, user.Role, user.StoreId, storeName, mustChangePassword)
         );
     }
 
@@ -275,7 +278,34 @@ public class AuthService : IAuthService
                 user.Store.AllowNegativeStock,
                 user.Store.InvoicePrefix,
                 user.Store.IsActive
-            )
+            ),
+            (await _userManager.GetClaimsAsync(user)).Any(c => c.Type == "MustChangePassword" && c.Value == "true")
         );
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null || !user.IsActive)
+            throw new NotFoundException("USER_NOT_FOUND", "User account not found.");
+
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errors = result.Errors.Select(e => e.Description);
+            throw new DomainException("PASSWORD_CHANGE_FAILED", "Failed to change password.", 400, errors);
+        }
+
+        var claims = await _userManager.GetClaimsAsync(user);
+        var mustChangeClaim = claims.FirstOrDefault(c => c.Type == "MustChangePassword");
+        if (mustChangeClaim != null)
+        {
+            await _userManager.RemoveClaimAsync(user, mustChangeClaim);
+        }
+
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
+        return true;
     }
 }

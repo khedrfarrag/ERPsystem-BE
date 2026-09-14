@@ -8,6 +8,7 @@ using RetailOS.Shared;
 namespace RetailOS.Api.Controllers;
 
 [ApiController]
+[Route("api/v1/[controller]")]
 [Route("api/[controller]")]
 [AllowAnonymous]
 public class SeedController : ControllerBase

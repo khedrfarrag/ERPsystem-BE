@@ -8,7 +8,8 @@ public record UpdateStoreRequest(
     bool AllowNegativeStock,
     string? InvoicePrefix,
     string Currency = "EGP",
-    string Timezone = "Africa/Cairo"
+    string Timezone = "Africa/Cairo",
+    bool EnableInvoiceArchiving = true
 );
 
 public record StoreResponse(
@@ -23,5 +24,6 @@ public record StoreResponse(
     bool AllowNegativeStock,
     string? InvoicePrefix,
     bool IsActive,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    bool EnableInvoiceArchiving = true
 );

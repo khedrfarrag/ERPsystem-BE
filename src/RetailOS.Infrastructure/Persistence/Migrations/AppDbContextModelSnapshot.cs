@@ -1293,6 +1293,10 @@ namespace RetailOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
+                    b.Property<string>("InvoiceImageUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("invoice_image_url");
+
                     b.Property<string>("InvoiceNumber")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -1975,6 +1979,10 @@ namespace RetailOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(10)")
                         .HasDefaultValue("EGP")
                         .HasColumnName("currency");
+
+                    b.Property<bool>("EnableInvoiceArchiving")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enable_invoice_archiving");
 
                     b.Property<string>("InvoicePrefix")
                         .ValueGeneratedOnAdd()

@@ -13,6 +13,7 @@ public class Store : BaseEntity
     public bool TaxEnabled { get; set; } = false;
     public bool AllowNegativeStock { get; set; } = false;
     public string? InvoicePrefix { get; set; } = "INV";
+    public bool EnableInvoiceArchiving { get; set; } = true;
     public bool IsActive { get; set; } = true;
 
     // Navigation properties

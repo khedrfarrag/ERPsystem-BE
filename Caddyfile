@@ -1,0 +1,43 @@
+{
+    # Global settings
+    email {$ACME_EMAIL:admin@retailos.com}
+    admin off
+}
+
+{$DOMAIN:localhost} {
+    encode zstd gzip
+
+    # Production Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Route Backend API Requests (both v1 canonical and root fallback)
+    handle /api/* {
+        reverse_proxy backend:5000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Route Backend Health Probes
+    handle /health/* {
+        reverse_proxy backend:5000
+    }
+
+    # Route Frontend SPA
+    handle {
+        reverse_proxy frontend:80
+    }
+
+    # Access Logs
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}

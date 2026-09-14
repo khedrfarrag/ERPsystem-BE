@@ -16,6 +16,11 @@ public record LoginRequest(
     string Password
 );
 
+public record ChangePasswordRequest(
+    string CurrentPassword,
+    string NewPassword
+);
+
 public record RefreshTokenRequest(
     string RefreshToken
 );
@@ -34,7 +39,8 @@ public record UserDto(
     string LastName,
     string Role,
     Guid StoreId,
-    string StoreName
+    string StoreName,
+    bool MustChangePassword = false
 );
 
 public record CurrentUserResponse(
@@ -43,7 +49,8 @@ public record CurrentUserResponse(
     string FirstName,
     string LastName,
     string Role,
-    StoreDto Store
+    StoreDto Store,
+    bool MustChangePassword = false
 );
 
 public record StoreDto(

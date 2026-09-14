@@ -1,0 +1,144 @@
+version: '3.9'
+
+# ==============================================================================
+# RetailOS Enterprise Production Stack
+# Architecture: Isolated Database -> Secured Backend -> SPA Frontend -> Edge Proxy
+# ==============================================================================
+
+# Reusable Logging Anchor (Option A: 20MB max-size, 3 rotated files)
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL 16 Database Service (Secure Internal Network Only)
+  # ----------------------------------------------------------------------------
+  database:
+    image: postgres:16-alpine
+    container_name: retailos_db_prod
+    restart: unless-stopped
+    # Stream logs to stderr directly to prevent internal data volume bloating
+    command:
+      - "postgres"
+      - "-c"
+      - "logging_collector=off"
+      - "-c"
+      - "log_destination=stderr"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-retailos_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-retailos_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password must be set in .env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal_backend_net
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-retailos_admin} -d ${POSTGRES_DB:-retailos_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # SECURITY AUDIT: No ports exposed to host/public internet!
+
+  # ----------------------------------------------------------------------------
+  # 2. RetailOS Backend Service (.NET 9 Modular Monolith Web API)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: retailos_api_prod
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__Default: "Host=database;Port=5432;Database=${POSTGRES_DB:-retailos_prod};Username=${POSTGRES_USER:-retailos_admin};Password=${POSTGRES_PASSWORD}"
+      Jwt__Secret: ${JWT_SECRET:?JWT Secret must be set in .env (min 32 characters)}
+      Jwt__Issuer: "RetailOS"
+      Jwt__Audience: "RetailOS"
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__Model: ${GEMINI_MODEL:-gemini-1.5-pro}
+    networks:
+      - internal_backend_net
+      - internal_frontend_net
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # 3. RetailOS Frontend Service (React + Vite + Nginx SPA)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../system-FE
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api/v1
+    container_name: retailos_fe_prod
+    restart: unless-stopped
+    networks:
+      - internal_frontend_net
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ----------------------------------------------------------------------------
+  # 4. Edge Reverse Proxy & Automatic Let's Encrypt SSL (Caddy / Nginx)
+  # ----------------------------------------------------------------------------
+  edge_proxy:
+    image: caddy:2-alpine
+    container_name: retailos_edge_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3 QUIC
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal_frontend_net
+    logging: *default-logging
+    depends_on:
+      - backend
+      - frontend
+
+# ==============================================================================
+# Persistent Named Volumes (Data Integrity Guaranteed)
+# ==============================================================================
+volumes:
+  pgdata:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+# ==============================================================================
+# Isolated Networks (Zero-Trust Architectural Segmentation)
+# ==============================================================================
+networks:
+  # Isolated network between API and DB. Public traffic CANNOT reach DB.
+  internal_backend_net:
+    driver: bridge
+    internal: true
+
+  # DMZ network between Edge Proxy, Frontend, and API.
+  internal_frontend_net:
+    driver: bridge

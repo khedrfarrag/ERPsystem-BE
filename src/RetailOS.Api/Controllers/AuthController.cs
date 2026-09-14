@@ -8,6 +8,7 @@ using RetailOS.Shared;
 namespace RetailOS.Api.Controllers;
 
 [ApiController]
+[Route("api/v1/[controller]")]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
@@ -68,5 +69,22 @@ public class AuthController : ControllerBase
     {
         var response = await _authService.GetCurrentUserAsync(cancellationToken);
         return Ok(ApiResponse<CurrentUserResponse>.Ok(response));
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        var principal = User;
+        var userIdClaim = principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+                       ?? principal?.FindFirst("sub");
+
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            return Unauthorized();
+
+        var result = await _authService.ChangePasswordAsync(userId, request, cancellationToken);
+        return Ok(ApiResponse<bool>.Ok(result, "Password changed successfully."));
     }
 }

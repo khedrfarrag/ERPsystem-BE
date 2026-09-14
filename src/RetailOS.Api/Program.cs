@@ -48,6 +48,20 @@ if (app.Environment.IsDevelopment())
         Log.Warning(ex, "Could not auto-seed demo data on startup");
     }
 }
+else if (app.Environment.IsProduction())
+{
+    // Idempotent production master data seeding (Units & Initial Owner only, no fake data)
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var prodSeeder = scope.ServiceProvider.GetRequiredService<RetailOS.Application.Common.Interfaces.IProductionDataSeeder>();
+        await prodSeeder.SeedProductionMasterDataAsync();
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Could not seed production master data on startup");
+    }
+}
 
 app.UseCors("FrontendPolicy");
 app.UseRateLimiter();

@@ -13,6 +13,7 @@ public class Purchase : SoftDeletableEntity, ITenantEntity
     public PurchaseStatus Status { get; set; } = PurchaseStatus.Draft;
     public decimal TotalAmount { get; set; }
     public string? Notes { get; set; }
+    public string? InvoiceImageUrl { get; set; }
     public Guid CreatedBy { get; set; }
 
     // Navigation properties

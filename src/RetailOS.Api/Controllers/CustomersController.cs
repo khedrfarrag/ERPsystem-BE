@@ -9,6 +9,7 @@ using RetailOS.Shared.Constants;
 namespace RetailOS.Api.Controllers;
 
 [ApiController]
+[Route("api/v1/[controller]")]
 [Route("api/[controller]")]
 [Authorize]
 public class CustomersController : ControllerBase

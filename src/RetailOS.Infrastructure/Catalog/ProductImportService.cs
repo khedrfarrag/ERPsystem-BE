@@ -57,9 +57,9 @@ public class ProductImportService : IProductImportService
 
         var rawRows = ParseFile(fileStream, fileName);
         if (rawRows.Count == 0)
-            throw new DomainException("EMPTY_IMPORT_FILE", "The import file contains no data rows.", 400);
+            throw new DomainException("EMPTY_IMPORT_FILE", "ملف الاستيراد فارغ ولا يحتوي على صفوف بيانات.", 400);
 
-        var (validItems, errors) = await ValidateRowsAsync(rawRows, cancellationToken);
+        var (validItems, errors, _, _) = await ValidateRowsAsync(rawRows, cancellationToken);
 
         var errorDict = errors
             .GroupBy(e => e.Row)
@@ -104,9 +104,9 @@ public class ProductImportService : IProductImportService
 
         var rawRows = ParseFile(fileStream, fileName);
         if (rawRows.Count == 0)
-            throw new DomainException("EMPTY_IMPORT_FILE", "The import file contains no data rows.", 400);
+            throw new DomainException("EMPTY_IMPORT_FILE", "ملف الاستيراد فارغ ولا يحتوي على صفوف بيانات.", 400);
 
-        var (validItems, errors) = await ValidateRowsAsync(rawRows, cancellationToken);
+        var (validItems, errors, newCategories, newUnits) = await ValidateRowsAsync(rawRows, cancellationToken);
         var skippedInvalid = errors.Count;
 
         // Fetch current store products for duplicate checking
@@ -163,10 +163,21 @@ public class ProductImportService : IProductImportService
                 existingBarcodes.Add(item.Barcode);
         }
 
-        if (batchToCreate.Count > 0)
+        if (newCategories.Count > 0 || newUnits.Count > 0 || batchToCreate.Count > 0)
         {
             await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
-            _context.Products.AddRange(batchToCreate);
+            if (newCategories.Count > 0)
+            {
+                _context.Categories.AddRange(newCategories);
+            }
+            if (newUnits.Count > 0)
+            {
+                _context.Units.AddRange(newUnits);
+            }
+            if (batchToCreate.Count > 0)
+            {
+                _context.Products.AddRange(batchToCreate);
+            }
             await _context.SaveChangesAsync(cancellationToken);
             await tx.CommitAsync(cancellationToken);
         }
@@ -181,10 +192,12 @@ public class ProductImportService : IProductImportService
         );
     }
 
-    private async Task<(List<ParsedValidProduct> Valid, List<ImportRowError> Errors)> ValidateRowsAsync(
+    private async Task<(List<ParsedValidProduct> Valid, List<ImportRowError> Errors, List<Category> NewCategories, List<Unit> NewUnits)> ValidateRowsAsync(
         List<RawRow> rows,
         CancellationToken cancellationToken)
     {
+        var currentStoreId = _storeContext.CurrentStoreId!.Value;
+
         var activeCategories = await _context.Categories
             .AsNoTracking()
             .Where(c => c.IsActive)
@@ -198,8 +211,17 @@ public class ProductImportService : IProductImportService
             .Where(u => u.IsActive)
             .ToListAsync(cancellationToken);
 
-        var unitMap = activeUnits
-            .ToDictionary(u => u.Symbol.Trim().ToLower(), u => u.Id);
+        var unitMap = new Dictionary<string, Guid>();
+        foreach (var u in activeUnits)
+        {
+            if (!string.IsNullOrWhiteSpace(u.Symbol))
+                unitMap[u.Symbol.Trim().ToLower()] = u.Id;
+            if (!string.IsNullOrWhiteSpace(u.Name))
+                unitMap[u.Name.Trim().ToLower()] = u.Id;
+        }
+
+        var newCategories = new Dictionary<string, Category>();
+        var newUnits = new Dictionary<string, Unit>();
 
         var valid = new List<ParsedValidProduct>();
         var errors = new List<ImportRowError>();
@@ -208,31 +230,66 @@ public class ProductImportService : IProductImportService
         {
             if (string.IsNullOrWhiteSpace(row.Name))
             {
-                errors.Add(new ImportRowError(row.RowNumber, "name", "Product name is required."));
+                errors.Add(new ImportRowError(row.RowNumber, "name", "اسم الصنف مطلوب."));
                 continue;
             }
 
             if (row.Name.Trim().Length > 300)
             {
-                errors.Add(new ImportRowError(row.RowNumber, "name", "Product name cannot exceed 300 characters."));
+                errors.Add(new ImportRowError(row.RowNumber, "name", "اسم الصنف لا يمكن أن يتجاوز 300 حرف."));
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(row.CategoryName) || !categoryMap.TryGetValue(row.CategoryName.Trim().ToLower(), out var categoryId))
+            // Category: Match or Auto-create
+            var catName = string.IsNullOrWhiteSpace(row.CategoryName) ? "عام" : row.CategoryName.Trim();
+            var catKey = catName.ToLower();
+            if (!categoryMap.TryGetValue(catKey, out var categoryId))
             {
-                errors.Add(new ImportRowError(row.RowNumber, "category_name", $"Category '{row.CategoryName}' does not exist. Please create it first."));
-                continue;
+                if (!newCategories.TryGetValue(catKey, out var newCat))
+                {
+                    newCat = new Category
+                    {
+                        StoreId = currentStoreId,
+                        Name = catName,
+                        IsActive = true
+                    };
+                    categoryId = newCat.Id;
+                    newCategories[catKey] = newCat;
+                    categoryMap[catKey] = categoryId;
+                }
+                else
+                {
+                    categoryId = newCat.Id;
+                }
             }
 
-            if (string.IsNullOrWhiteSpace(row.UnitSymbol) || !unitMap.TryGetValue(row.UnitSymbol.Trim().ToLower(), out var unitId))
+            // Unit: Match or Auto-create
+            var unitSymbol = string.IsNullOrWhiteSpace(row.UnitSymbol) ? "قطعة" : row.UnitSymbol.Trim();
+            var unitKey = unitSymbol.ToLower();
+            if (!unitMap.TryGetValue(unitKey, out var unitId))
             {
-                errors.Add(new ImportRowError(row.RowNumber, "unit_symbol", $"Unit '{row.UnitSymbol}' does not exist. Please create it first."));
-                continue;
+                if (!newUnits.TryGetValue(unitKey, out var newUnit))
+                {
+                    newUnit = new Unit
+                    {
+                        StoreId = currentStoreId,
+                        Name = unitSymbol,
+                        Symbol = unitSymbol,
+                        IsActive = true
+                    };
+                    unitId = newUnit.Id;
+                    newUnits[unitKey] = newUnit;
+                    unitMap[unitKey] = unitId;
+                }
+                else
+                {
+                    unitId = newUnit.Id;
+                }
             }
 
             if (!decimal.TryParse(row.SellingPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var price) || price <= 0)
             {
-                errors.Add(new ImportRowError(row.RowNumber, "selling_price", "Selling price must be greater than zero."));
+                errors.Add(new ImportRowError(row.RowNumber, "selling_price", "سعر البيع يجب أن يكون أكبر من صفر."));
                 continue;
             }
 
@@ -241,7 +298,7 @@ public class ProductImportService : IProductImportService
             {
                 if (!decimal.TryParse(row.PurchaseCost, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsedCost) || parsedCost < 0)
                 {
-                    errors.Add(new ImportRowError(row.RowNumber, "purchase_cost", "Purchase cost cannot be negative."));
+                    errors.Add(new ImportRowError(row.RowNumber, "purchase_cost", "سعر التكلفة لا يمكن أن يكون سالباً."));
                     continue;
                 }
                 cost = parsedCost;
@@ -252,7 +309,7 @@ public class ProductImportService : IProductImportService
             {
                 if (!decimal.TryParse(row.MinStockLevel, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsedStock) || parsedStock < 0)
                 {
-                    errors.Add(new ImportRowError(row.RowNumber, "min_stock_level", "Minimum stock level cannot be negative."));
+                    errors.Add(new ImportRowError(row.RowNumber, "min_stock_level", "الحد الأدنى للمخزون لا يمكن أن يكون سالباً."));
                     continue;
                 }
                 minStock = parsedStock;
@@ -288,7 +345,7 @@ public class ProductImportService : IProductImportService
             ));
         }
 
-        return (valid, errors);
+        return (valid, errors, newCategories.Values.ToList(), newUnits.Values.ToList());
     }
 
     private static List<RawRow> ParseFile(Stream stream, string fileName)
@@ -298,7 +355,7 @@ public class ProductImportService : IProductImportService
         {
             ".csv" => ParseCsv(stream),
             ".xlsx" => ParseXlsx(stream),
-            _ => throw new DomainException("UNSUPPORTED_FILE_FORMAT", "Only CSV and XLSX files are supported.", 400)
+            _ => throw new DomainException("UNSUPPORTED_FILE_FORMAT", "صيغة الملف غير مدعومة. الصيغ المدعومة هي CSV و XLSX فقط.", 400)
         };
     }
 
@@ -369,5 +426,66 @@ public class ProductImportService : IProductImportService
         }
 
         return rows;
+    }
+
+    public byte[] GenerateTemplateXlsx()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("قالب_الأصناف");
+        worksheet.RightToLeft = true;
+
+        var headers = new[]
+        {
+            "اسم الصنف (إجباري)",
+            "الباركود",
+            "الفئة",
+            "الوحدة",
+            "سعر البيع (إجباري)",
+            "سعر التكلفة",
+            "الحد الأدنى للمخزون",
+            "الوصف",
+            "سعر الجملة",
+            "متاح جملة (1 أو 0)"
+        };
+
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = worksheet.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Font.FontColor = XLColor.White;
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#059669");
+            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        }
+
+        var sampleData = new object[][]
+        {
+            new object[] { "صابون سائل ديتول 500 مل", "6221234567890", "المنظفات", "قطعة", 35.00, 25.00, 10, "صابون سائل معقم لليدين", 30.00, 1 },
+            new object[] { "مسحوق غسيل أوتوماتيك 3 كجم", "6221234567891", "المنظفات", "كجم", 180.00, 140.00, 5, "مسحوق تنظيف ملابس عالي الرغوة", 160.00, 1 },
+            new object[] { "معطر جو روز 300 مل", "6221234567892", "المعطرات", "عبوة", 45.00, 32.00, 8, "معطر جو برائحة الورد المنعش", 38.00, 1 },
+            new object[] { "كلور مبيض 1 لتر", "6221234567893", "المنظفات", "لتر", 22.00, 16.00, 15, "مبيض ومنظف أسطح متعدد الاستخدامات", 19.00, 1 },
+            new object[] { "منظف زجاج ومرايا 500 مل", "6221234567894", "المنظفات", "علبة", 28.00, 20.00, 8, "ملمع ومنظف للزجاج فائق اللمعان", 24.00, 1 }
+        };
+
+        for (int r = 0; r < sampleData.Length; r++)
+        {
+            for (int c = 0; c < sampleData[r].Length; c++)
+            {
+                var cell = worksheet.Cell(r + 2, c + 1);
+                var val = sampleData[r][c];
+                if (val is double d)
+                    cell.Value = d;
+                else if (val is int intVal)
+                    cell.Value = intVal;
+                else
+                    cell.Value = val?.ToString() ?? "";
+            }
+        }
+
+        worksheet.Columns().AdjustToContents();
+
+        using var ms = new MemoryStream();
+        workbook.SaveAs(ms);
+        return ms.ToArray();
     }
 }
