@@ -20,7 +20,8 @@ public record CategoryResponse(
     string? Description,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    int ProductCount = 0
 );
 
 public record CategoryListResponse(

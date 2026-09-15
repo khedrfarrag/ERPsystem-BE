@@ -51,7 +51,7 @@ public class AiInvoiceMatchingService : IAiInvoiceMatchingService
                 .Include(p => p.Category)
                 .Include(p => p.Unit)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.StoreId == storeId && p.Barcode == cleanBarcode && p.IsActive && !p.IsDeleted, cancellationToken);
+                .FirstOrDefaultAsync(p => p.StoreId == storeId && p.Barcode == cleanBarcode && p.IsActive , cancellationToken);
 
             if (productByBarcode != null)
             {
@@ -64,7 +64,7 @@ public class AiInvoiceMatchingService : IAiInvoiceMatchingService
             .Include(p => p.Category)
             .Include(p => p.Unit)
             .AsNoTracking()
-            .Where(p => p.StoreId == storeId && p.IsActive && !p.IsDeleted)
+            .Where(p => p.StoreId == storeId && p.IsActive )
             .ToListAsync(cancellationToken);
 
         // 2. Tier 2: Exact Name match (Normalized)

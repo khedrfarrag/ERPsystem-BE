@@ -35,6 +35,11 @@ public class CreateProductRequestValidator : AbstractValidator<CreateProductRequ
             .When(x => x.MinStockLevel.HasValue)
             .WithMessage("Minimum stock level cannot be negative.");
 
+        RuleFor(x => x.InitialStock)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.InitialStock.HasValue)
+            .WithMessage("Initial stock cannot be negative.");
+
         RuleFor(x => x.Barcode)
             .MaximumLength(100)
             .When(x => !string.IsNullOrEmpty(x.Barcode))

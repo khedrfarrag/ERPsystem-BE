@@ -1,3 +1,4 @@
+using RetailOS.Domain.Enums;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using RetailOS.Application.Common.Exceptions;
@@ -13,17 +14,20 @@ public class ProductService : IProductService
 {
     private readonly AppDbContext _context;
     private readonly IStoreContext _storeContext;
+    private readonly IUserContext _userContext;
     private readonly IValidator<CreateProductRequest> _createValidator;
     private readonly IValidator<UpdateProductRequest> _updateValidator;
 
     public ProductService(
         AppDbContext context,
         IStoreContext storeContext,
+        IUserContext userContext,
         IValidator<CreateProductRequest> createValidator,
         IValidator<UpdateProductRequest> updateValidator)
     {
         _context = context;
         _storeContext = storeContext;
+        _userContext = userContext;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
     }
@@ -206,6 +210,29 @@ public class ProductService : IProductService
 
         _context.Products.Add(product);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Record Opening Balance inventory transaction if initial stock was provided
+        if (request.InitialStock.HasValue && request.InitialStock.Value > 0)
+        {
+            var initialQty = request.InitialStock.Value;
+            var cost = request.PurchaseCost ?? 0m;
+            var userId = _userContext.CurrentUserId ?? Guid.Empty;
+
+            var openingTx = new InventoryTransaction
+            {
+                StoreId = product.StoreId,
+                ProductId = product.Id,
+                Quantity = initialQty,
+                CostPerUnit = cost,
+                Reason = InventoryTransactionReason.OpeningBalance,
+                Notes = "رصيد افتتاحي عند إنشاء المنتج",
+                CreatedBy = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.InventoryTransactions.Add(openingTx);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         product.Category = category;
         product.Unit = unit;

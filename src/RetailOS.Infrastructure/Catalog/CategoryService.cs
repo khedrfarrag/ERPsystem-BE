@@ -58,7 +58,7 @@ public class CategoryService : ICategoryService
             .OrderBy(c => c.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => MapToResponse(c))
+            .Select(c => new CategoryResponse(c.Id, c.Name, c.Description, c.IsActive, c.CreatedAt, c.UpdatedAt, c.Products.Count(p => p.DeletedAt == null)))
             .ToListAsync(cancellationToken);
 
         return new CategoryListResponse(items, totalCount, page, pageSize);
@@ -185,6 +185,7 @@ public class CategoryService : ICategoryService
         c.Description,
         c.IsActive,
         c.CreatedAt,
-        c.UpdatedAt
+        c.UpdatedAt,
+        c.Products != null ? c.Products.Count(p => p.DeletedAt == null) : 0
     );
 }

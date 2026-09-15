@@ -507,3 +507,7 @@ wwwroot/uploads/
 uploads/
 test-invoices/
 scratch_*.js
+
+# Publish Release
+publish_release/
+publish_release.zip

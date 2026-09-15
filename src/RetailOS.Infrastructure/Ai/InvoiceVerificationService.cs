@@ -52,7 +52,7 @@ public class InvoiceVerificationService : IInvoiceVerificationService
             .AsNoTracking()
             .Include(p => p.LineItems)
             .Where(p => p.StoreId == storeId 
-                        && !p.IsDeleted 
+                         
                         && p.SupplierId == supplierId.Value 
                         && p.InvoiceNumber != null 
                         && p.InvoiceNumber.Trim().ToLower() == cleanInvoiceNum.ToLower())
@@ -117,7 +117,7 @@ public class InvoiceVerificationService : IInvoiceVerificationService
             .AsNoTracking()
             .Include(p => p.LineItems)
             .Where(p => p.StoreId == storeId 
-                        && !p.IsDeleted 
+                         
                         && p.SupplierId == supplierId.Value 
                         && p.InvoiceNumber != null 
                         && p.InvoiceNumber.Trim().ToLower() == cleanInvoiceNum.ToLower())

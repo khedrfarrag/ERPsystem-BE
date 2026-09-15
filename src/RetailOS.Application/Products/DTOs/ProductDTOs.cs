@@ -22,7 +22,8 @@ public record CreateProductRequest(
     decimal? MinStockLevel = null,
     string? ImageUrl = null,
     decimal? WholesalePrice = null,
-    bool IsWholesaleAvailable = false
+    bool IsWholesaleAvailable = false,
+    decimal? InitialStock = null
 );
 
 public record UpdateProductRequest(

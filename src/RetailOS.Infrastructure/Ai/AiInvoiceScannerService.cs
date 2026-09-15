@@ -87,11 +87,16 @@ public class AiInvoiceScannerService : IAiInvoiceScannerService
 
         if (!string.IsNullOrWhiteSpace(rawInvoice.SupplierName))
         {
-            var rawSuppName = rawInvoice.SupplierName.Trim().ToLowerInvariant();
-            var supplier = await _context.Suppliers
+            var rawSuppName = rawInvoice.SupplierName.Trim();
+            var suppliers = await _context.Suppliers
                 .AsNoTracking()
-                .Where(s => s.StoreId == storeId && s.IsActive && !s.IsDeleted)
-                .FirstOrDefaultAsync(s => s.Name.ToLower() == rawSuppName || rawSuppName.Contains(s.Name.ToLower()), cancellationToken);
+                .Where(s => s.StoreId == storeId && s.IsActive)
+                .ToListAsync(cancellationToken);
+
+            var supplier = suppliers.FirstOrDefault(s =>
+                s.Name.Equals(rawSuppName, StringComparison.OrdinalIgnoreCase) ||
+                s.Name.Contains(rawSuppName, StringComparison.OrdinalIgnoreCase) ||
+                rawSuppName.Contains(s.Name, StringComparison.OrdinalIgnoreCase));
 
             if (supplier != null)
             {
@@ -229,11 +234,11 @@ public class AiInvoiceScannerService : IAiInvoiceScannerService
 
         // 2. Resolve or provision Categories & Units
         var activeCategories = await _context.Categories
-            .Where(c => c.StoreId == storeId && c.IsActive && !c.IsDeleted)
+            .Where(c => c.StoreId == storeId && c.IsActive )
             .ToDictionaryAsync(c => c.Name.Trim().ToLowerInvariant(), c => c.Id, cancellationToken);
 
         var activeUnits = await _context.Units
-            .Where(u => u.StoreId == storeId && u.IsActive && !u.IsDeleted)
+            .Where(u => u.StoreId == storeId && u.IsActive )
             .ToListAsync(cancellationToken);
 
         var unitMap = new Dictionary<string, Guid>();
@@ -295,7 +300,7 @@ public class AiInvoiceScannerService : IAiInvoiceScannerService
         {
             var rawSupName = request.SupplierName.Trim();
             var existingSupplier = await _context.Suppliers
-                .FirstOrDefaultAsync(s => s.StoreId == storeId && s.Name.ToLower() == rawSupName.ToLower() && !s.IsDeleted, cancellationToken);
+                .FirstOrDefaultAsync(s => s.StoreId == storeId && s.Name.ToLower() == rawSupName.ToLower() , cancellationToken);
 
             if (existingSupplier != null)
             {
@@ -321,7 +326,7 @@ public class AiInvoiceScannerService : IAiInvoiceScannerService
         var resolvedProducts = new List<(CommitAiInvoiceItemDto Item, Product Product)>();
 
         var existingProducts = await _context.Products
-            .Where(p => p.StoreId == storeId && !p.IsDeleted)
+            .Where(p => p.StoreId == storeId )
             .ToListAsync(cancellationToken);
 
         var productDictById = existingProducts.ToDictionary(p => p.Id);
